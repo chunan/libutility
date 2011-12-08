@@ -8,7 +8,7 @@ MACHINE=$(shell uname -m)
 SRC = ugoc_utility.cpp
 OBJ = $(addprefix obj/$(MACHINE)/,$(SRC:.cpp=.o))
 
-TARGET = lib/$(MACHINE)/ugoc_utility.a
+TARGET = lib/$(MACHINE)/libugoc_utility.a
 
 vpath %.cpp src
 vpath %.o obj/$(MACHINE)
@@ -27,7 +27,7 @@ debug: $(TARGET)
 %.d: %.cpp
 	$(CC) -M $(CXXFLAGS) $< > $@
 
-lib/$(MACHINE)/ugoc_utility.a: \
+lib/$(MACHINE)/libugoc_utility.a: \
 	obj/$(MACHINE)/ugoc_utility.o
 	$(AR) rucs $@ $^
 
