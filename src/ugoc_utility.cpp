@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <cstdarg>
 #include <cstdlib>
+#include <string.h>
 
 #include "ugoc_utility.h"
 
@@ -12,6 +13,14 @@ FILE *FOPEN(const char fname[], char const flag[])
 		exit(-1);
 	}
 	return fd;
+}/*}}}*/
+
+char *Strcpy(char *&dest, const char src[])
+{/*{{{*/
+	if(dest != NULL) Free_1d_array(dest);
+	dest = new char [strlen(src)+1];
+	strcpy(dest,src);
+	return dest;
 }/*}}}*/
 
 void ErrorExit(const char file[], int line, int exit_value, const char *format, ...)

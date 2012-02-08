@@ -16,7 +16,7 @@ vpath %.a lib/$(MACHINE)
 
 .PHONY: mk_machine_dir all clean allclean
 
-all: CXXFLAGS:=-Wall -O2 $(CXXFLAGS)
+all: CXXFLAGS:=-Wall -Werror -O2 $(CXXFLAGS)
 
 all: mk_machine_dir $(TARGET)
 
