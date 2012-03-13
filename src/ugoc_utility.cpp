@@ -76,8 +76,8 @@ clock_t TimeStamp(struct tms *tms_stamp, bool *timeron) {
 void Timer::Print() {
   double rtime, utime, stime;
   double sum_rtime = 0, sum_utime = 0, sum_stime = 0;
-  cout << "ID    real    user     sys     log\n";
-  cout << "-----------------------------------\n";
+  cout << "ID      real      user       sys   log\n";
+  cout << "-------------------------------------------\n";
   for (unsigned i = 0; i < log.size(); ++i) {
     if (tic_not_toc[i]) {
       cout << "Timer is tic but not toc.";
@@ -86,21 +86,21 @@ void Timer::Print() {
                  &s_stamp[i], &e_stamp[i],
                  &rtime, &utime, &stime, false);
       cout << setw(2) << i 
-        << setw(8) << rtime
-        << setw(8) << utime
-        << setw(8) << stime;
+        << setw(10) << rtime
+        << setw(10) << utime
+        << setw(10) << stime;
       sum_rtime += rtime;
       sum_utime += utime;
       sum_stime += stime;
     }
-    cout << setw(8) << log[i] << endl;
+    cout << "   " << log[i] << endl;
   }
-  cout << "------------------------------------\n";
+  cout << "-------------------------------------------\n";
   cout << "Sum"
-    << setw(7) << sum_rtime
-    << setw(8) << sum_utime
-    << setw(8) << sum_stime
-    << setw(8) << sum_utime + sum_stime << "\n";
+    << setw(9) << sum_rtime
+    << setw(10) << sum_utime
+    << setw(10) << sum_stime
+    << "   user + sys = " << sum_utime + sum_stime << "\n";
 }
 
 unsigned Timer::Tic(const char* msg) {
@@ -121,3 +121,22 @@ void Timer::Toc(unsigned i) {
   e_real[i] = TimeStamp(&e_stamp[i], &is_working);
   tic_not_toc[i] = false;
 }
+
+
+void StripExtension(string* input) {/*{{{*/
+  size_t pos = input->find_last_of(".");
+  *input = input->substr(0, pos);
+}/*}}}*/
+
+
+void KeepBasename(string* input) {/*{{{*/
+  size_t pos1 = input->find_last_of("/");
+  size_t pos2 = input->find_last_of(".");
+  *input = input->substr(pos1 + 1, pos2 - pos1 - 1);
+}/*}}}*/
+
+void KeepBasename(vector<string>* list) {/*{{{*/
+  for (unsigned i = 0; i < list->size(); ++i) {
+    KeepBasename(&(*list)[i]);
+  }
+}/*}}}*/

@@ -200,4 +200,10 @@ class Timer {
     bool is_working;
 };
 
+void StripExtension(string* input);
+
+void KeepBasename(string* input);
+
+void KeepBasename(vector<string>* list);
+
 #endif
