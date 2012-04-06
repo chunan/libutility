@@ -110,7 +110,7 @@ void _DumpDist(FILE* fp,/*{{{*/
     vector<float>& dist = snippet_dist_qidx[didx];
     if (dist.size() >= 1) {
       fprintf(fp,"%d %d %s %d %.6f %d\n",
-              qid, 0, D_list[didx].c_str(), 0, -dist[0], didx);
+              qid, 0, D_list[didx].c_str(), 0, dist[0], didx);
     } else {
       cerr << "Warning: (qid, didx) = (" << qid << ", " << didx
         << ") not found.\n";
