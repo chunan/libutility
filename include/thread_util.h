@@ -18,7 +18,7 @@ class Dispatcher {/*{{{*/
       pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_FAST_NP);
       pthread_mutex_init(&f_mutex, &attr);
       verbose = false;
-      verbose_interval = 100;
+      verbose_interval = 1;
     }/*}}}*/
     void Clear(){/*{{{*/
       objects.clear();

@@ -7,11 +7,40 @@
 #include <string>
 #include <cassert>
 #include <algorithm>
+#include "thread_util.h"
 
 using std::vector;
 using std::string;
 using std::cout;
 using std::setw;
+
+typedef std::pair<unsigned, unsigned> UPair;
+
+/* A num_query by num_doc array of _Tp
+ * Implemented by vector<vector<_Tp> >
+ */
+template<class _Tp>
+class QDArray {/*{{{*/
+  public:
+    QDArray() {}
+    QDArray(unsigned nq, unsigned nd) { Resize(nq, nd); }
+    void Resize(unsigned nq, unsigned nd) {
+      array.resize(nq);
+      for (unsigned q = 0; q < nq; ++q) {
+        array[q].resize(nd);
+      }
+    }
+    _Tp& operator()(unsigned q, unsigned d) {
+      assert(q < array.size() && d < array[q].size());
+      return array[q][d];
+    }
+    vector<_Tp>& operator[](unsigned q) {
+      assert(q < array.size());
+      return array[q];
+    }
+  private:
+    vector<vector<_Tp> > array;
+};/*}}}*/
 
 struct QueryProfile {/*{{{*/
   int qid;
@@ -67,5 +96,14 @@ void ParseList(const char *filename,
 void ParseIgnore(const char* filename,
                  vector<string>& D_list,
                  QueryProfileList* profile_list);
+
+void InitDispatcher(Dispatcher<UPair>* disp,
+                    const QueryProfileList& profile_list,
+                    const vector<string>& D_list);
+
+void DumpResult(const char* fname,
+                const QueryProfileList& profile_list,
+                QDArray<vector<float> >& snippet_dist,
+                const vector<string>& D_list);
 
 #endif

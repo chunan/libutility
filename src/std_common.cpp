@@ -1,8 +1,10 @@
 #include <cstring>
 #include "ugoc_utility.h"
 #include "std_common.h"
+#include "thread_util.h"
 
 
+using std::cerr;
 
 void ParseList(const char *filename,/*{{{*/
                vector<string> *list,
@@ -69,3 +71,70 @@ void ParseIgnore(const char* filename,/*{{{*/
   profile_list->SortIgnore();
 }/*}}}*/
 
+
+
+inline void _InitDispatcherRange(Dispatcher<UPair> *disp, /*{{{*/
+                                 unsigned qidx,
+                                 unsigned didx_start,
+                                 unsigned didx_end) {
+  for (unsigned didx = didx_start; didx < didx_end; ++didx) {
+    disp->Push(UPair(qidx, didx));
+  }
+}/*}}}*/
+
+void InitDispatcher(Dispatcher<UPair>* disp, /*{{{*/
+                    const QueryProfileList& profile_list,
+                    const vector<string>& D_list) {
+
+  disp->Clear();
+
+  for (unsigned qidx = 0; qidx < profile_list.size(); ++ qidx) {
+    const QueryProfile& query = profile_list.QP(qidx);
+    unsigned didx_start = 0;
+    /* For each ignore */
+    for (unsigned i = 0; i < query.ignore.size(); ++i) {
+      _InitDispatcherRange(disp, qidx, didx_start, query.ignore[i]);
+      didx_start = query.ignore[i] + 1;
+    }
+    _InitDispatcherRange(disp, qidx, didx_start, D_list.size());
+  }
+}/*}}}*/
+
+
+
+void _DumpDist(FILE* fp,/*{{{*/
+               vector<vector<float> >& snippet_dist_qidx,
+               int qid, unsigned didx_start, unsigned didx_end,
+               const vector<string>& D_list) {
+  for (unsigned didx = didx_start; didx < didx_end; ++didx) {
+    vector<float>& dist = snippet_dist_qidx[didx];
+    if (dist.size() >= 1) {
+      fprintf(fp,"%d %d %s %d %.6f %d\n",
+              qid, 0, D_list[didx].c_str(), 0, -dist[0], didx);
+    } else {
+      cerr << "Warning: (qid, didx) = (" << qid << ", " << didx
+        << ") not found.\n";
+    }
+  }
+}/*}}}*/
+
+void DumpResult(const char* fname,/*{{{*/
+                const QueryProfileList& profile_list,
+                QDArray<vector<float> >& snippet_dist,
+                const vector<string>& D_list) {
+  FILE* fp = FOPEN(fname, "w");
+  /* For each query id */
+  for (unsigned qidx = 0; qidx < profile_list.size(); ++qidx) {
+    const QueryProfile& query = profile_list.QP(qidx);
+    unsigned didx_start = 0;
+    /* For each ignore */
+    for (unsigned i = 0; i < query.ignore.size(); ++i) {
+      _DumpDist(fp, snippet_dist[qidx], query.qid,
+                didx_start, query.ignore[i], D_list);
+      didx_start = query.ignore[i] + 1;
+    }
+    _DumpDist(fp, snippet_dist[qidx], query.qid,
+              didx_start, D_list.size(), D_list);
+  }
+  fclose(fp);
+}/*}}}*/

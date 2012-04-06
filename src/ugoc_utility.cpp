@@ -9,6 +9,8 @@
 using std::cout;
 using std::cerr;
 using std::endl;
+using std::right;
+using std::left;
 
 FILE *FOPEN(const char fname[], char const flag[])
 {/*{{{*/
@@ -76,8 +78,8 @@ clock_t TimeStamp(struct tms *tms_stamp, bool *timeron) {
 void Timer::Print() {
   double rtime, utime, stime;
   double sum_rtime = 0, sum_utime = 0, sum_stime = 0;
-  cout << "ID      real      user       sys   log\n";
-  cout << "-------------------------------------------\n";
+  cout << "ID     real      user       sys      log\n";
+  cout << "------------------------------------------------\n";
   for (unsigned i = 0; i < log.size(); ++i) {
     if (tic_not_toc[i]) {
       cout << "Timer is tic but not toc.";
@@ -85,22 +87,30 @@ void Timer::Print() {
       CalCpuTime(e_real[i] - s_real[i],
                  &s_stamp[i], &e_stamp[i],
                  &rtime, &utime, &stime, false);
-      cout << setw(2) << i 
-        << setw(10) << rtime
-        << setw(10) << utime
-        << setw(10) << stime;
-      sum_rtime += rtime;
-      sum_utime += utime;
-      sum_stime += stime;
+      cout.width(2 + nested_level[i]);
+      cout << right << i;
+      cout.width(5 - nested_level[i]);
+      cout << right << ' ';
+      cout.width(10);
+      cout << left << rtime;
+      cout.width(10);
+      cout << left << utime;
+      cout.width(10);
+      cout << left << stime;
+      if (nested_level[i] == 0) {
+        sum_rtime += rtime;
+        sum_utime += utime;
+        sum_stime += stime;
+      }
     }
-    cout << "   " << log[i] << endl;
+    cout << log[i] << endl;
   }
-  cout << "-------------------------------------------\n";
-  cout << "Sum"
-    << setw(9) << sum_rtime
-    << setw(10) << sum_utime
-    << setw(10) << sum_stime
-    << "   user + sys = " << sum_utime + sum_stime << "\n";
+  cout << "------------------------------------------------\n";
+  cout << "Sum    "
+    << setw(10) << left << sum_rtime
+    << setw(10) << left << sum_utime
+    << setw(10) << left << sum_stime
+    << "user + sys = " << sum_utime + sum_stime << "\n";
 }
 
 unsigned Timer::Tic(const char* msg) {
@@ -111,12 +121,16 @@ unsigned Timer::Tic(const char* msg) {
   s_real.push_back(TimeStamp(&s_stamp[i], &is_working));
   e_real.push_back(0);
   tic_not_toc.push_back(true);
+  nested_level.push_back(level);
+  level++;
   return i;
 }
 
 void Timer::Toc(unsigned i) {
   if (!tic_not_toc[i]) {
     cerr << "Warning: timer[" << i << "] re-stamped, overwrite.\n";
+  } else {
+    level--;
   }
   e_real[i] = TimeStamp(&e_stamp[i], &is_working);
   tic_not_toc[i] = false;

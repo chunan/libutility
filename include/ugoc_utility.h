@@ -1,6 +1,7 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include <fstream>
 #include <sys/times.h>
 #include <cassert>
 #include <cstdio>
@@ -9,6 +10,8 @@
 #include <string>
 #include <iomanip>
 #include <iostream>
+#include <stdio.h>
+#include <string.h>
 
 using std::cout;
 using std::endl;
@@ -16,6 +19,7 @@ using std::setw;
 using std::deque;
 using std::vector;
 using std::string;
+using std::ostream;
 
 char *Strcpy(char *&dest, const char src[]);
 
@@ -109,11 +113,27 @@ bool Free_1d_array(_Tp *&ptr)
 template<class _Tp>
 class TwoDimArray {
   public:
-    TwoDimArray() { Init(); }
+    /* constructor */
+    TwoDimArray() {
+      Init();
+    }
+    /* copy constructor */
+    TwoDimArray(const TwoDimArray& op) {
+      Init();
+      *this = op;
+    }
+    /* constructor with dimensions */
     TwoDimArray(int nr, int nc) {
       Init();
       Resize(nr, nc);
     }
+    /* operator= */
+    const TwoDimArray& operator=(const TwoDimArray& op) {
+      Resize(op.R(), op.C());
+      memcpy(data_, op.data_, op.R() * op.C() * sizeof(_Tp));
+      return *this;
+    }
+
     ~TwoDimArray() {
       mem_op<_Tp>::delete_2d_array(&data_);
     }
@@ -130,19 +150,19 @@ class TwoDimArray {
         }
       }
     }
-    _Tp& operator()(const int r, const int c) {
+    inline _Tp& operator()(const int r, const int c) {
       assert(data_ != NULL);
       assert(r >= 0 && r < nr_);
       assert(c >= 0 && c < nc_);
       return data_[r][c];
     }
-    _Tp Entry(const int r, const int c) const {
+    inline _Tp Entry(const int r, const int c) const {
       assert(data_ != NULL);
       assert(r >= 0 && r < nr_);
       assert(c >= 0 && c < nc_);
       return data_[r][c];
     }
-    _Tp* operator[](const int r) {
+    inline _Tp* operator[](const int r) {
       if (data_ == NULL) {
         return NULL;
       } else {
@@ -150,7 +170,7 @@ class TwoDimArray {
         return data_[r];
       }
     }
-    const _Tp* Vec(const int r) const {
+    inline const _Tp* Vec(const int r) const {
       if (data_ == NULL) {
         return NULL;
       } else {
@@ -158,11 +178,11 @@ class TwoDimArray {
         return data_[r];
       }
     }
-    int R() const { return nr_; }
-    int C() const { return nc_; }
-    int R_max() const { return nr_max_; }
-    int C_max() const { return nc_max_; }
-    void DumpData() const {}
+    inline _Tp** Ptr() const { return data_; }
+    inline int R() const { return nr_; }
+    inline int C() const { return nc_; }
+    inline int R_max() const { return nr_max_; }
+    inline int C_max() const { return nc_max_; }
   private:
     void Init() {
       data_ = NULL;
@@ -176,6 +196,17 @@ class TwoDimArray {
     int size_;
 };
 
+template<class _Tp>
+ostream& operator<<(ostream& fs, const TwoDimArray<_Tp>& tda) {
+  for (int r = 0; r < tda.R(); ++r) {
+    for (int c = 0; c < tda.C(); ++c) {
+      fs << " " << tda.Entry(r, c);
+    }
+    fs << endl;
+  }
+  return fs;
+}
+
 void CalCpuTime(clock_t real, struct tms *tms_start, struct tms * tms_end,
                 double *rtime, double *utime, double *stime,
                 bool print);
@@ -188,15 +219,21 @@ void ErrorExit(const char file[], int line, int exit_value, const char *format, 
 
 class Timer {
   public:
-    Timer() { is_working = true; }
+    Timer() { is_working = true; level = 0;}
     void Print();
     unsigned Tic(const char* msg);
     void Toc(unsigned i);
+    bool NotToc(unsigned i) const {
+      assert(i < tic_not_toc.size());
+      return tic_not_toc[i];
+    }
   private:
     vector<string> log;
     vector<struct tms> s_stamp, e_stamp;
     vector<clock_t> s_real, e_real;
     vector<bool> tic_not_toc;
+    vector<unsigned> nested_level;
+    unsigned level;
     bool is_working;
 };
 
@@ -205,5 +242,6 @@ void StripExtension(string* input);
 void KeepBasename(string* input);
 
 void KeepBasename(vector<string>* list);
+
 
 #endif
