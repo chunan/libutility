@@ -7,14 +7,20 @@
 #include <string>
 #include <cassert>
 #include <algorithm>
+#include <limits>
 #include "thread_util.h"
+#include "ugoc_utility.h"
 
 using std::vector;
 using std::string;
 using std::cout;
 using std::setw;
+using std::ostream;
 
 typedef std::pair<unsigned, unsigned> UPair;
+
+
+#define float_inf std::numeric_limits<float>::infinity()
 
 /* A num_query by num_doc array of _Tp
  * Implemented by vector<vector<_Tp> >
@@ -37,6 +43,18 @@ class QDArray {/*{{{*/
     vector<_Tp>& operator[](unsigned q) {
       assert(q < array.size());
       return array[q];
+    }
+    void memfill(const _Tp& val) {
+      for (unsigned q = 0; q < array.size(); ++q) {
+        for (unsigned d = 0; d < array[q].size(); ++d) {
+          array[q][d] = val;
+        }
+      }
+    }
+    unsigned NumQ() const { return array.size(); };
+    unsigned NumD() const {
+      if (!array.empty()) return array[0].size();
+      else return 0u;
     }
   private:
     vector<vector<_Tp> > array;
@@ -76,7 +94,7 @@ class QueryProfileList {/*{{{*/
       }
     }
     void Print() const {
-      cout << " qid  ignore_list\n";  
+      cout << " qid  ignore_list\n";
       for (unsigned qidx = 0; qidx < profiles.size(); ++qidx) {
          cout << setw(4) << profiles[qidx].qid << "  {";
          for (unsigned j = 0; j < profiles[qidx].ignore.size(); ++j) {
@@ -89,21 +107,114 @@ class QueryProfileList {/*{{{*/
     vector<QueryProfile> profiles;
 };/*}}}*/
 
+class SnippetProfile {/*{{{*/
+  public:
+    SnippetProfile() : qidx(-1), didx(-1), nth_snippet(-1), score(float_inf) {}
+    SnippetProfile(int q, int d, int n, float s) { Init(q, d, n, s); }
+    virtual void Init(int q, int d, int n, float s) {
+      qidx = q;
+      didx = d;
+      nth_snippet = n;
+      score = s;
+    }
+    int Qidx() const { return qidx; }
+    int Didx() const { return didx; }
+    int NthSnippet() const { return nth_snippet; }
+    float Score() const { return score; }
+  protected:
+    int qidx;
+    int didx;
+    int nth_snippet;
+    float score;
+};/*}}}*/
+
+inline bool CompareSnippetScore(const SnippetProfile& a,/*{{{*/
+                                const SnippetProfile& b) {
+  return a.Score() >= b.Score();
+}/*}}}*/
+
+class SnippetProfileList {/*{{{*/
+  public:
+    void Resize(unsigned n) { profiles.resize(n); }
+    void clear() { profiles.clear(); }
+    unsigned size() const { return profiles.size(); }
+    const SnippetProfile& GetProfile(unsigned idx) const {
+      assert(idx < profiles.size());
+      return profiles[idx];
+    }
+    int push_back(int q, int d, int n, float s) {
+      profiles.push_back(SnippetProfile(q, d, n, s));
+      return profiles.size() - 1;
+    }
+    int push_back(const SnippetProfile& sp) {
+      profiles.push_back(sp);
+      return profiles.size() - 1;
+    }
+    void Sort(unsigned i, unsigned j) {
+      assert(i <= j);
+      assert(j <= size());
+      sort(profiles.begin() + i, profiles.begin() + j, CompareSnippetScore);
+    }
+  private:
+    vector<SnippetProfile> profiles;
+};/*}}}*/
+
+ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list);
+
+class AnswerList {/*{{{*/
+  public:
+    AnswerList() {}
+    AnswerList(const string& filename,
+               const QueryProfileList& profile_list,
+               const vector<string>& doc_list);
+    void Init(const string& filename,
+              const QueryProfileList& query_prof_list,
+              const vector<string>& doc_list);
+    bool IsAnswer(int qidx, int didx) const {
+      if (qidx < 0 || qidx >= static_cast<int>(is_answer.R()))
+        return false;
+      else if (didx < 0 || didx >= static_cast<int>(is_answer.C()))
+        return false;
+      else
+        return is_answer.Entry(qidx, didx);
+    }
+    unsigned NumQ() const { return is_answer.R(); };
+    unsigned NumD() const { return is_answer.C(); };
+  private:
+    TwoDimArray<bool> is_answer;
+
+};/*}}}*/
+
+ostream& operator<<(ostream& os, const AnswerList& ans_list);
+
+
 void ParseList(const char *filename,
+               string directory,
                vector<string> *list,
                QueryProfileList *profile_list = NULL);
 
 void ParseIgnore(const char* filename,
-                 vector<string>& D_list,
+                 vector<string>& doc_list,
                  QueryProfileList* profile_list);
 
 void InitDispatcher(Dispatcher<UPair>* disp,
                     const QueryProfileList& profile_list,
-                    const vector<string>& D_list);
+                    const vector<string>& doc_list);
 
 void DumpResult(const char* fname,
                 const QueryProfileList& profile_list,
                 QDArray<vector<float> >& snippet_dist,
-                const vector<string>& D_list);
+                const vector<string>& doc_list);
 
+void DumpResult(FILE* fp,
+                int qid,
+                const SnippetProfileList& snippet_list,
+                const vector<string>& doc_list,
+                const AnswerList* ans_list);
+
+void DumpResult(string filename,
+                const QueryProfileList& profile_list,
+                const vector<SnippetProfileList>& snippet_lists,
+                const vector<string>& doc_list,
+                const AnswerList* ans_list);
 #endif
