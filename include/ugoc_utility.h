@@ -111,7 +111,7 @@ bool Free_1d_array(_Tp *&ptr)
  * [r]: return the [r] vector (pointer of (r, 0))
  */
 template<class _Tp>
-class TwoDimArray {
+class TwoDimArray {/*{{{*/
   public:
     /* constructor */
     TwoDimArray() {
@@ -194,10 +194,10 @@ class TwoDimArray {
     int nr_max_;
     int nc_max_;
     int size_;
-};
+};/*}}}*/
 
 template<class _Tp>
-ostream& operator<<(ostream& fs, const TwoDimArray<_Tp>& tda) {
+ostream& operator<<(ostream& fs, const TwoDimArray<_Tp>& tda) {/*{{{*/
   for (int r = 0; r < tda.R(); ++r) {
     for (int c = 0; c < tda.C(); ++c) {
       fs << " " << tda.Entry(r, c);
@@ -205,7 +205,7 @@ ostream& operator<<(ostream& fs, const TwoDimArray<_Tp>& tda) {
     fs << endl;
   }
   return fs;
-}
+}/*}}}*/
 
 void CalCpuTime(clock_t real, struct tms *tms_start, struct tms * tms_end,
                 double *rtime, double *utime, double *stime,
@@ -237,11 +237,24 @@ class Timer {
     bool is_working;
 };
 
+inline void InstallTimer(Timer*& timer_ptr, Timer& timer_obj) {
+  timer_ptr = &timer_obj;
+}
+
 void StripExtension(string* input);
 
 void KeepBasename(string* input);
 
 void KeepBasename(vector<string>* list);
+
+struct ReplaceExt {
+  ReplaceExt(string e) { ext = e; }
+  void operator()(string& str) {
+    size_t pos = str.find_last_of('.');
+    str = str.substr(0, pos + 1) + ext;
+  }
+  string ext;
+};
 
 
 #endif

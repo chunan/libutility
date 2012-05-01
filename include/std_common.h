@@ -17,6 +17,9 @@ using std::cout;
 using std::setw;
 using std::ostream;
 
+
+namespace StdCommonUtil {
+
 typedef std::pair<unsigned, unsigned> UPair;
 
 
@@ -32,9 +35,8 @@ class QDArray {/*{{{*/
     QDArray(unsigned nq, unsigned nd) { Resize(nq, nd); }
     void Resize(unsigned nq, unsigned nd) {
       array.resize(nq);
-      for (unsigned q = 0; q < nq; ++q) {
+      for (unsigned q = 0; q < nq; ++q)
         array[q].resize(nd);
-      }
     }
     _Tp& operator()(unsigned q, unsigned d) {
       assert(q < array.size() && d < array[q].size());
@@ -45,10 +47,10 @@ class QDArray {/*{{{*/
       return array[q];
     }
     void memfill(const _Tp& val) {
-      for (unsigned q = 0; q < array.size(); ++q) {
-        for (unsigned d = 0; d < array[q].size(); ++d) {
-          array[q][d] = val;
-        }
+      if (!array.empty()) {
+        unsigned n = array[0].size();
+        for (unsigned q = 0; q < array.size(); ++q)
+          array[q].assign(n, val);
       }
     }
     unsigned NumQ() const { return array.size(); };
@@ -136,7 +138,7 @@ inline bool CompareSnippetScore(const SnippetProfile& a,/*{{{*/
 class SnippetProfileList {/*{{{*/
   public:
     void Resize(unsigned n) { profiles.resize(n); }
-    void clear() { profiles.clear(); }
+    void Clear() { profiles.clear(); }
     unsigned size() const { return profiles.size(); }
     const SnippetProfile& GetProfile(unsigned idx) const {
       assert(idx < profiles.size());
@@ -201,6 +203,9 @@ void InitDispatcher(Dispatcher<UPair>* disp,
                     const QueryProfileList& profile_list,
                     const vector<string>& doc_list);
 
+void InitDispatcher(Dispatcher<UPair>* disp,
+                    const vector<SnippetProfileList>& snippet_lists);
+
 void DumpResult(const char* fname,
                 const QueryProfileList& profile_list,
                 QDArray<vector<float> >& snippet_dist,
@@ -217,4 +222,6 @@ void DumpResult(string filename,
                 const vector<SnippetProfileList>& snippet_lists,
                 const vector<string>& doc_list,
                 const AnswerList* ans_list);
+
+} //namespace StdCommonUtil
 #endif

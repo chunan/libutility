@@ -1,5 +1,6 @@
 #include <cstring>
 #include <typeinfo>
+#include <set>
 #include "ugoc_utility.h"
 #include "std_common.h"
 #include "thread_util.h"
@@ -8,6 +9,7 @@
 using std::cout;
 using std::cerr;
 
+namespace StdCommonUtil {
 
 int GetDidx(const vector<string>& doc_list, string name) {/*{{{*/
   size_t found;
@@ -92,7 +94,7 @@ void ParseIgnore(const char* filename,/*{{{*/
 
 
 
-ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list) {
+ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list) {/*{{{*/
   os << "qidx didx nth_snippet score\n";
   for (unsigned i = 0; i < snippet_list.size(); ++i) {
     os << std::right
@@ -103,7 +105,7 @@ ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list) {
       << endl;
   }
   return os;
-}
+}/*}}}*/
 
 
 
@@ -187,6 +189,18 @@ void InitDispatcher(Dispatcher<UPair>* disp, /*{{{*/
   }
 }/*}}}*/
 
+void InitDispatcher(Dispatcher<UPair>* disp,/*{{{*/
+                    const vector<SnippetProfileList>& snippet_lists) {
+  disp->Clear();
+  for (unsigned qidx = 0; qidx < snippet_lists.size(); ++qidx) {
+    std::set<unsigned> docs;
+    const SnippetProfileList& qidx_snippets = snippet_lists[qidx];
+    for (unsigned i = 0; i < qidx_snippets.size(); ++i) // collect docs
+      docs.insert(qidx_snippets.GetProfile(i).Didx());
+    for (typeof(docs.begin()) itr = docs.begin(); itr != docs.end(); ++itr)
+      disp->Push(UPair(qidx, *itr));
+  }
+}/*}}}*/
 
 
 void _DumpDist(FILE* fp,/*{{{*/
@@ -245,7 +259,7 @@ void DumpResult(FILE* fp,/*{{{*/
   }
 }/*}}}*/
 
-void DumpResult(string filename,
+void DumpResult(string filename,/*{{{*/
                 const QueryProfileList& profile_list,
                 const vector<SnippetProfileList>& snippet_lists,
                 const vector<string>& doc_list,
@@ -257,4 +271,6 @@ void DumpResult(string filename,
     DumpResult(fp, query.qid, snippet_lists[qidx], doc_list, ans_list);
   }
   fclose(fp);
-}
+}/*}}}*/
+
+} //namespace StdCommonUtil
