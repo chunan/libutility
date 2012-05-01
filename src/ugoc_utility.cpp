@@ -38,7 +38,7 @@ void ErrorExit(const char file[], int line, int exit_value, const char *format, 
 	vsprintf(msg, format, args);
 	va_end(args);
 	fprintf(stderr, "Error: %s L%d: ",file,line);
-	fprintf(stderr, msg);
+	fprintf(stderr, "%s", msg);
 	exit(exit_value);
 
 }/*}}}*/
