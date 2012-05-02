@@ -132,7 +132,7 @@ class SnippetProfile {/*{{{*/
 
 inline bool CompareSnippetScore(const SnippetProfile& a,/*{{{*/
                                 const SnippetProfile& b) {
-  return a.Score() >= b.Score();
+  return a.Score() > b.Score();
 }/*}}}*/
 
 class SnippetProfileList {/*{{{*/
