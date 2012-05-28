@@ -154,3 +154,16 @@ void KeepBasename(vector<string>* list) {/*{{{*/
     KeepBasename(&(*list)[i]);
   }
 }/*}}}*/
+
+string GetExtension(const string& input) {
+  string ext;
+  int slash_pos = input.find_last_of("/");
+  if (slash_pos == static_cast<int>(string::npos)) slash_pos = -1;
+  int dot_pos = input.substr(slash_pos + 1).find_first_of(".");
+  if (dot_pos != static_cast<int>(string::npos)) {
+    ext = input.substr(slash_pos + dot_pos + 2);
+  } else {
+    ext.clear();
+  }
+  return ext;
+}

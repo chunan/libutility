@@ -8,6 +8,7 @@
 
 using std::cout;
 using std::cerr;
+using std::setprecision;
 
 namespace StdCommonUtil {
 
@@ -95,13 +96,15 @@ void ParseIgnore(const char* filename,/*{{{*/
 
 
 ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list) {/*{{{*/
-  os << "qidx didx nth_snippet score\n";
+  os << "qidx didx nth score (start, end)\n";
   for (unsigned i = 0; i < snippet_list.size(); ++i) {
     os << std::right
       << setw(4) << snippet_list.GetProfile(i).Qidx()
       << setw(5) << snippet_list.GetProfile(i).Didx()
-      << setw(12) << snippet_list.GetProfile(i).NthSnippet()
-      << ' ' << snippet_list.GetProfile(i).Score()
+      << setw(4) << snippet_list.GetProfile(i).NthSnippet()
+      << ' ' << setprecision(3) << snippet_list.GetProfile(i).Score()
+      << " (" << snippet_list.GetProfile(i).Boundary().first
+      << ", " << setw(5) << snippet_list.GetProfile(i).Boundary().second << ")"
       << endl;
   }
   return os;
@@ -193,12 +196,17 @@ void InitDispatcher(Dispatcher<UPair>* disp,/*{{{*/
                     const vector<SnippetProfileList>& snippet_lists) {
   disp->Clear();
   for (unsigned qidx = 0; qidx < snippet_lists.size(); ++qidx) {
-    std::set<unsigned> docs;
     const SnippetProfileList& qidx_snippets = snippet_lists[qidx];
+    /*
+    std::set<unsigned> docs;
     for (unsigned i = 0; i < qidx_snippets.size(); ++i) // collect docs
       docs.insert(qidx_snippets.GetProfile(i).Didx());
     for (typeof(docs.begin()) itr = docs.begin(); itr != docs.end(); ++itr)
       disp->Push(UPair(qidx, *itr));
+      */
+    for (unsigned sidx = 0; sidx < qidx_snippets.size(); ++sidx) {
+      disp->Push(UPair(qidx, sidx));
+    }
   }
 }/*}}}*/
 
@@ -245,17 +253,26 @@ void DumpResult(FILE* fp,/*{{{*/
                 int qid,
                 const SnippetProfileList& snippet_list,
                 const vector<string>& doc_list,
-                const AnswerList* ans_list) {
+                const AnswerList* ans_list,
+                vector<bool>& exist_doc,
+                const float bias) {
+
+
   for (unsigned i = 0; i < snippet_list.size(); ++i) {
     const SnippetProfile& snippet = snippet_list.GetProfile(i);
     int qidx = snippet.Qidx();
     int didx = snippet.Didx();
-    int answer = -(i + 1);
-    if (ans_list != NULL && ans_list->IsAnswer(qidx, didx)) {
-      answer = -answer;
+
+    if (!exist_doc[didx]) {
+      exist_doc[didx] = true;
+      int answer = -(i + 1);
+      if (ans_list != NULL && ans_list->IsAnswer(qidx, didx)) {
+        answer = -answer;
+      }
+      fprintf(fp,"%d %d %s %d %.6f %d\n", qid,
+              snippet.Boundary().first, doc_list[didx].c_str(),
+              snippet.Boundary().second, bias + snippet.Score(), answer);
     }
-    fprintf(fp,"%d %d %s %d %.6f %d\n",
-            qid, 0, doc_list[didx].c_str(), 0, snippet.Score(), answer);
   }
 }/*}}}*/
 
@@ -265,10 +282,65 @@ void DumpResult(string filename,/*{{{*/
                 const vector<string>& doc_list,
                 const AnswerList* ans_list) {
   FILE* fp = FOPEN(filename.c_str(), "w");
+  vector<bool> exist_doc(doc_list.size());
   /* For each query id */
   for (unsigned qidx = 0; qidx < profile_list.size(); ++qidx) {
     const QueryProfile& query = profile_list.QP(qidx);
-    DumpResult(fp, query.qid, snippet_lists[qidx], doc_list, ans_list);
+    exist_doc.assign(exist_doc.size(), false);
+    DumpResult(fp, query.qid, snippet_lists[qidx], doc_list, ans_list, exist_doc);
+  }
+  fclose(fp);
+}/*}}}*/
+
+void DumpResult(string filename,/*{{{*/
+                const QueryProfileList& profile_list,
+                const vector<SnippetProfileList>& snippet_lists,
+                const vector<SnippetProfileList>& backup_lists,
+                const vector<string>& doc_list,
+                const AnswerList* ans_list) {
+  FILE* fp = FOPEN(filename.c_str(), "w");
+  vector<bool> exist_doc(doc_list.size());
+  /* For each query id */
+  for (unsigned qidx = 0; qidx < profile_list.size(); ++qidx) {
+    const QueryProfile& query = profile_list.QP(qidx);
+    exist_doc.assign(exist_doc.size(), false);
+    float bias = snippet_lists[qidx].Back().Score() -
+      backup_lists[qidx].Front().Score();
+    DumpResult(fp, query.qid, snippet_lists[qidx],
+               doc_list, ans_list, exist_doc);
+    DumpResult(fp, query.qid, backup_lists[qidx],
+               doc_list, ans_list, exist_doc,
+               bias);
+  }
+  fclose(fp);
+}/*}}}*/
+
+void DumpResult(string filename,/*{{{*/
+                const QueryProfileList& profile_list,
+                const vector<const vector<SnippetProfileList>* >& v_snp_lists,
+                const vector<string>& doc_list,
+                const AnswerList* ans_list) {
+
+  FILE* fp = FOPEN(filename.c_str(), "w");
+  vector<bool> exist_doc(doc_list.size());
+
+  /* For each query id */
+  for (unsigned qidx = 0; qidx < profile_list.size(); ++qidx) {
+
+      const QueryProfile& query = profile_list.QP(qidx);
+      exist_doc.assign(exist_doc.size(), false);
+
+      for (int i = v_snp_lists.size() - 1; i >= 0; --i) {
+        const SnippetProfileList& snippet_list = (*v_snp_lists[i])[qidx];
+        float bias = 0.0f;
+        if (i < static_cast<int>(v_snp_lists.size() - 1)) {
+          const SnippetProfileList& higher_list = (*v_snp_lists[i + 1])[qidx];
+          bias = higher_list.Back().Score() - snippet_list.Front().Score();
+        }
+        DumpResult(fp, query.qid, snippet_list, doc_list, ans_list, exist_doc,
+                   bias);
+      }
+
   }
   fclose(fp);
 }/*}}}*/

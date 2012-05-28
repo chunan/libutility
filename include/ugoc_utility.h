@@ -102,6 +102,60 @@ bool Free_1d_array(_Tp *&ptr)
 	return true;
 }/*}}}*/
 
+template<class _Tp>
+class TwoDimVector {/*{{{*/
+  public:
+    TwoDimVector() {}
+    TwoDimVector(unsigned nrow, unsigned ncol) { resize(nrow, ncol); }
+    void resize(unsigned nrow, unsigned ncol) {
+      array.resize(nrow);
+      for (unsigned q = 0; q < nrow; ++q)
+        array[q].resize(ncol);
+    }
+    _Tp& operator()(unsigned q, unsigned d) {
+      assert(q < array.size() && d < array[q].size());
+      return array[q][d];
+    }
+    const _Tp& operator()(unsigned q, unsigned d) const {
+      assert(q < array.size() && d < array[q].size());
+      return array[q][d];
+    }
+    vector<_Tp>& operator[](unsigned q) {
+      assert(q < array.size());
+      return array[q];
+    }
+    const vector<_Tp>& operator[](unsigned q) const {
+      assert(q < array.size());
+      return array[q];
+    }
+    void memfill(const _Tp& val) {
+      if (!array.empty()) {
+        unsigned n = array[0].size();
+        for (unsigned q = 0; q < array.size(); ++q)
+          array[q].assign(n, val);
+      }
+    }
+    unsigned nrow() const { return array.size(); };
+    unsigned ncol() const {
+      if (!array.empty()) return array[0].size();
+      else return 0u;
+    }
+  private:
+    vector<vector<_Tp> > array;
+};/*}}}*/
+
+template<class _Tp>
+ostream& operator<<(ostream& os, const TwoDimVector<_Tp>& op) {
+  for (unsigned r = 0; r < op.nrow(); ++r) {
+    for (unsigned c = 0; c < op.ncol(); ++c) {
+      os << "\t" << op(r, c);
+    }
+    os << "\n";
+  }
+  return os;
+}
+
+
 /* Maitain a 2D array stored as an 1D array (continuous space)
  * R(): current number of rows
  * C(): current number of columns
@@ -152,6 +206,8 @@ class TwoDimArray {/*{{{*/
     }
     inline _Tp& operator()(const int r, const int c) {
       assert(data_ != NULL);
+      //if (r < 0 || r >= nr_) cout << *this;
+      //if (c < 0 || c >= nc_) cout << *this;
       assert(r >= 0 && r < nr_);
       assert(c >= 0 && c < nc_);
       return data_[r][c];
@@ -246,6 +302,8 @@ void StripExtension(string* input);
 void KeepBasename(string* input);
 
 void KeepBasename(vector<string>* list);
+
+string GetExtension(const string& input);
 
 struct ReplaceExt {
   ReplaceExt(string e) { ext = e; }

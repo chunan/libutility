@@ -26,18 +26,23 @@ class Dispatcher {/*{{{*/
     }/*}}}*/
     _Tp* GetObjPtr(const bool lock = true){/*{{{*/
       _Tp* objptr = NULL;
+
       if (lock)
         pthread_mutex_lock(&f_mutex);
+
       if (ctr < objects.size()) {
         objptr = &objects[ctr];
         ctr++;
-        if (verbose && (ctr % verbose_interval == 0)){
-          cout << " " << ctr << "\n";
-          cout.flush();
-        }
       }
+
+      if (objptr == NULL || (verbose && (ctr % verbose_interval == 0))){
+        cout << "\r" << 100 * ctr / objects.size() << "%  ";
+        cout.flush();
+      }
+
       if (lock)
         pthread_mutex_unlock(&f_mutex);
+
       return objptr;
     }/*}}}*/
     void Push(const _Tp &obj) { objects.push_back(obj); }
@@ -45,6 +50,7 @@ class Dispatcher {/*{{{*/
     void Verbose() { verbose = true; }
     void Quiet() { verbose = false; }
     void SetVerboseInt(unsigned n) { verbose_interval = n; }
+    unsigned count() const { return ctr + 1; }
     unsigned size() const { return objects.size(); }
     const _Tp& operator[](unsigned i) const { return objects[i]; }
 

@@ -21,6 +21,7 @@ using std::ostream;
 namespace StdCommonUtil {
 
 typedef std::pair<unsigned, unsigned> UPair;
+typedef std::pair<unsigned, unsigned> IPair;
 
 
 #define float_inf std::numeric_limits<float>::infinity()
@@ -111,23 +112,32 @@ class QueryProfileList {/*{{{*/
 
 class SnippetProfile {/*{{{*/
   public:
-    SnippetProfile() : qidx(-1), didx(-1), nth_snippet(-1), score(float_inf) {}
-    SnippetProfile(int q, int d, int n, float s) { Init(q, d, n, s); }
-    virtual void Init(int q, int d, int n, float s) {
+    SnippetProfile()
+      : qidx(-1), didx(-1), nth_snippet(-1),
+      score(float_inf), boundary(IPair(-1, -1)) {}
+    SnippetProfile(int q, int d, int n, float s, const IPair& b) {
+      Init(q, d, n, s, b);
+    }
+    void Init(int q, int d, int n, float s, const IPair& b) {
       qidx = q;
       didx = d;
       nth_snippet = n;
       score = s;
+      boundary = b;
     }
+    float& ScoreRef() { return score; }
+    IPair& BoundaryRef() { return boundary; }
     int Qidx() const { return qidx; }
     int Didx() const { return didx; }
     int NthSnippet() const { return nth_snippet; }
     float Score() const { return score; }
+    const IPair& Boundary() const { return boundary; }
   protected:
     int qidx;
     int didx;
     int nth_snippet;
     float score;
+    IPair boundary;
 };/*}}}*/
 
 inline bool CompareSnippetScore(const SnippetProfile& a,/*{{{*/
@@ -137,15 +147,34 @@ inline bool CompareSnippetScore(const SnippetProfile& a,/*{{{*/
 
 class SnippetProfileList {/*{{{*/
   public:
-    void Resize(unsigned n) { profiles.resize(n); }
+    void Resize(int n) {
+      assert(n <= static_cast<int>(profiles.size()));
+      assert(-n <= static_cast<int>(profiles.size()));
+      if (n >= 0) {
+        profiles.resize(n);
+      } else {
+        profiles.resize(profiles.size() + n);
+      }
+    }
     void Clear() { profiles.clear(); }
     unsigned size() const { return profiles.size(); }
     const SnippetProfile& GetProfile(unsigned idx) const {
       assert(idx < profiles.size());
       return profiles[idx];
     }
-    int push_back(int q, int d, int n, float s) {
-      profiles.push_back(SnippetProfile(q, d, n, s));
+    SnippetProfile& ProfileRef(int idx) {
+      assert(idx < static_cast<int>(profiles.size()));
+      assert(-idx <= static_cast<int>(profiles.size()));
+      return idx >= 0 ? profiles[idx] : profiles[profiles.size() + idx];
+    }
+    const SnippetProfile& Front() const {
+      return profiles.front();
+    }
+    const SnippetProfile& Back() const {
+      return profiles.back();
+    }
+    int push_back(int q, int d, int n, float s, const IPair& b) {
+      profiles.push_back(SnippetProfile(q, d, n, s, b));
       return profiles.size() - 1;
     }
     int push_back(const SnippetProfile& sp) {
@@ -156,6 +185,9 @@ class SnippetProfileList {/*{{{*/
       assert(i <= j);
       assert(j <= size());
       sort(profiles.begin() + i, profiles.begin() + j, CompareSnippetScore);
+    }
+    void Sort() {
+      sort(profiles.begin(), profiles.end(), CompareSnippetScore);
     }
   private:
     vector<SnippetProfile> profiles;
@@ -215,11 +247,26 @@ void DumpResult(FILE* fp,
                 int qid,
                 const SnippetProfileList& snippet_list,
                 const vector<string>& doc_list,
+                const AnswerList* ans_list,
+                vector<bool>& exist_doc,
+                float bias = 0.0f);
+
+void DumpResult(string filename,
+                const QueryProfileList& profile_list,
+                const vector<SnippetProfileList>& snippet_lists,
+                const vector<string>& doc_list,
                 const AnswerList* ans_list);
 
 void DumpResult(string filename,
                 const QueryProfileList& profile_list,
                 const vector<SnippetProfileList>& snippet_lists,
+                const vector<SnippetProfileList>& backup_lists,
+                const vector<string>& doc_list,
+                const AnswerList* ans_list);
+
+void DumpResult(string filename,
+                const QueryProfileList& profile_list,
+                const vector<const vector<SnippetProfileList>* >& v_snp_lists,
                 const vector<string>& doc_list,
                 const AnswerList* ans_list);
 
