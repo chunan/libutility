@@ -1,6 +1,8 @@
 #include <cstring>
 #include <typeinfo>
 #include <set>
+#include <cmath>
+#include <algorithm>
 #include "ugoc_utility.h"
 #include "std_common.h"
 #include "thread_util.h"
@@ -30,12 +32,20 @@ void ParseList(const char *filename,/*{{{*/
                string directory,
                vector<string> *list,
                QueryProfileList *profile_list) {
+
   /* Parse filename -> (profile_list and) list */
   FILE *fd = FOPEN(filename, "r");
   char buff[1024];
+
   while (fgets(buff, 1024, fd)) {
+
     int idx = -1;
     char *tok = strtok(buff," \t\n");
+
+    // Ignore lines starts with #
+    if (tok == NULL || *tok == '#') continue;
+
+    // First item is qid
     if (profile_list != NULL) {
       int qid = atoi(tok);
       if ((idx = profile_list->Find(qid)) != -1) {
@@ -47,6 +57,7 @@ void ParseList(const char *filename,/*{{{*/
       }
       tok = strtok(NULL," \t\n");
     }
+
     /* Store name */
     string filename;
     if (directory.empty()) {
@@ -70,8 +81,11 @@ void ParseIgnore(const char* filename,/*{{{*/
   char buff[1024];
   /* Parse each line: qid doc_name */
   while (fgets(buff, 1024, fd)) {
+
     /* 1st field, qid */
     char *tok = strtok(buff, " \t\n");
+    if (tok == NULL || *tok == '#') continue;
+
     int qid = atoi(tok);
     int qidx = profile_list->Find(qid);
     if (qidx == -1) { // Unknown qid
@@ -93,6 +107,95 @@ void ParseIgnore(const char* filename,/*{{{*/
   profile_list->SortIgnore();
 }/*}}}*/
 
+
+void SnippetProfileList::Stat(float* p_mean, float* p_std,
+                              int begin, int end) {
+  float& mean = *p_mean;
+  float& std = *p_std;
+
+  if (end < 0 || end > static_cast<int>(size())) end = size();
+  if (begin < 0 || begin >= static_cast<int>(size())) begin = 0;
+
+  mean = 0.0f;
+  std = 0.0f;
+
+  int nsnippet = 0;
+
+  for (int s = begin; s < end; ++s) {
+    float score = profiles[s].Score();
+    if (score != -float_inf) {
+      nsnippet++;
+      mean += score;
+      std += score * score;
+    }
+  }
+  mean /= nsnippet;
+  std = sqrt(std / nsnippet - mean * mean);
+}
+
+
+void SnippetProfileList::Normalize(int begin, int end) {
+
+  if (end < 0 || end > static_cast<int>(size())) end = size();
+  if (begin < 0 || begin >= static_cast<int>(size())) begin = 0;
+
+  float mean, std;
+  Stat(&mean, &std, begin, end);
+  Normalize(mean, std, begin, end);
+}
+
+
+void SnippetProfileList::Normalize(float mean, float std,
+                                   int begin, int end) {
+
+  if (end < 0 || end > static_cast<int>(size())) end = size();
+  if (begin < 0 || begin >= static_cast<int>(size())) begin = 0;
+
+  for (int s = begin; s < end; ++s) {
+    profiles[s].ScoreRef() -= mean;
+    profiles[s].ScoreRef() /= std;
+  }
+}
+
+
+void SnippetProfileList::Add(float weight, const SnippetProfileList& list,
+                             int begin, int end) {
+  if (weight == 0.0) return;
+
+  if (end < 0 || end > static_cast<int>(size())) end = size();
+  if (begin < 0 || begin >= static_cast<int>(size())) begin = 0;
+
+  if (static_cast<int>(list.size()) < end) {
+    cerr << "SnippetProfileList::Add(): error: list size not matched\n";
+    return;
+  }
+
+  for (int s = begin; s < end; ++s) {
+    SnippetProfile& host = profiles[s];
+    const SnippetProfile& guest = list.GetProfile(s);
+    if (host.Qidx() != guest.Qidx()) {
+      cerr << "SnippetProfileList::Add(): error: profile[" << s
+           << "].Qidx() not matched\n";
+    } else if (host.Didx() != guest.Didx()) {
+      cerr << "SnippetProfileList::Add(): error: profile[" << s
+           << "].Didx() not matched\n";
+    } else if (host.NthSnippet() != guest.NthSnippet()) {
+      cerr << "SnippetProfileList::Add(): error: profile[" << s
+           << "].NthSnippet() not matched\n";
+    } else {
+      host.ScoreRef() += weight * guest.Score();
+    }
+  }
+
+}
+
+void SnippetProfileList::Align(const SnippetProfileList& ref) {
+  for (unsigned sidx = 0; sidx < ref.profiles.size(); ++sidx) {
+    vector<SnippetProfile>::iterator itr;
+    itr = find(profiles.begin() + sidx, profiles.end(), ref.profiles[sidx]);
+    std::swap(*itr, profiles[sidx]);
+  }
+}
 
 
 ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list) {/*{{{*/
@@ -131,6 +234,7 @@ void AnswerList::Init(const string& filename,/*{{{*/
   while (fgets(buff, 1024, fd)) {
     /* 1st field, qid */
     char *tok = strtok(buff, " \t");
+    if (tok == NULL || *tok == '#') continue;
     int qid = atoi(tok);
     int qidx = profile_list.Find(qid);
     if (qidx == -1) { // Unknown qid
@@ -263,7 +367,7 @@ void DumpResult(FILE* fp,/*{{{*/
     int qidx = snippet.Qidx();
     int didx = snippet.Didx();
 
-    if (!exist_doc[didx]) {
+    if (!exist_doc[didx] && snippet.Score() != -float_inf) {
       exist_doc[didx] = true;
       int answer = -(i + 1);
       if (ans_list != NULL && ans_list->IsAnswer(qidx, didx)) {
@@ -331,12 +435,16 @@ void DumpResult(string filename,/*{{{*/
       exist_doc.assign(exist_doc.size(), false);
 
       for (int i = v_snp_lists.size() - 1; i >= 0; --i) {
+
         const SnippetProfileList& snippet_list = (*v_snp_lists[i])[qidx];
         float bias = 0.0f;
+
+        /* Not the last list, need bias */
         if (i < static_cast<int>(v_snp_lists.size() - 1)) {
           const SnippetProfileList& higher_list = (*v_snp_lists[i + 1])[qidx];
-          bias = higher_list.Back().Score() - snippet_list.Front().Score();
+          bias = higher_list.MinScore() - snippet_list.MaxScore();
         }
+
         DumpResult(fp, query.qid, snippet_list, doc_list, ans_list, exist_doc,
                    bias);
       }

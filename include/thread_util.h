@@ -49,7 +49,7 @@ class Dispatcher {/*{{{*/
     void Reset() { ctr = 0; }
     void Verbose() { verbose = true; }
     void Quiet() { verbose = false; }
-    void SetVerboseInt(unsigned n) { verbose_interval = n; }
+    void SetVerboseInt(unsigned n) { verbose_interval = n > 1 ? n : 1; }
     unsigned count() const { return ctr + 1; }
     unsigned size() const { return objects.size(); }
     const _Tp& operator[](unsigned i) const { return objects[i]; }

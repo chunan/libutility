@@ -11,6 +11,8 @@ using std::cerr;
 using std::endl;
 using std::right;
 using std::left;
+using std::fixed;
+using std::setprecision;
 
 FILE *FOPEN(const char fname[], char const flag[])
 {/*{{{*/
@@ -92,11 +94,12 @@ void Timer::Print() {
       cout.width(5 - nested_level[i]);
       cout << right << ' ';
       cout.width(10);
-      cout << left << rtime;
+      cout.setf(std::ios::fixed);
+      cout << left << setprecision(2) << rtime;
       cout.width(10);
-      cout << left << utime;
+      cout << left << setprecision(2) << utime;
       cout.width(10);
-      cout << left << stime;
+      cout << left << setprecision(2) << stime;
       if (nested_level[i] == 0) {
         sum_rtime += rtime;
         sum_utime += utime;
@@ -107,10 +110,10 @@ void Timer::Print() {
   }
   cout << "------------------------------------------------\n";
   cout << "Sum    "
-    << setw(10) << left << sum_rtime
-    << setw(10) << left << sum_utime
-    << setw(10) << left << sum_stime
-    << "user + sys = " << sum_utime + sum_stime << "\n";
+    << setw(10) << left << setprecision(2) << sum_rtime
+    << setw(10) << left << setprecision(2) << sum_utime
+    << setw(10) << left << setprecision(2) << sum_stime
+    << "user + sys = " << setprecision(2) << sum_utime + sum_stime << "\n";
 }
 
 unsigned Timer::Tic(const char* msg) {

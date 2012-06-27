@@ -21,7 +21,7 @@ using std::ostream;
 namespace StdCommonUtil {
 
 typedef std::pair<unsigned, unsigned> UPair;
-typedef std::pair<unsigned, unsigned> IPair;
+typedef std::pair<int, int> IPair;
 
 
 #define float_inf std::numeric_limits<float>::infinity()
@@ -62,6 +62,8 @@ class QDArray {/*{{{*/
   private:
     vector<vector<_Tp> > array;
 };/*}}}*/
+
+
 
 struct QueryProfile {/*{{{*/
   int qid;
@@ -110,6 +112,8 @@ class QueryProfileList {/*{{{*/
     vector<QueryProfile> profiles;
 };/*}}}*/
 
+
+
 class SnippetProfile {/*{{{*/
   public:
     SnippetProfile()
@@ -132,6 +136,7 @@ class SnippetProfile {/*{{{*/
     int NthSnippet() const { return nth_snippet; }
     float Score() const { return score; }
     const IPair& Boundary() const { return boundary; }
+    const int Len() const { return boundary.second - boundary.first + 1; }
   protected:
     int qidx;
     int didx;
@@ -144,6 +149,11 @@ inline bool CompareSnippetScore(const SnippetProfile& a,/*{{{*/
                                 const SnippetProfile& b) {
   return a.Score() > b.Score();
 }/*}}}*/
+
+inline bool operator==(const SnippetProfile&a, const SnippetProfile& b) {
+  return a.Qidx() == b.Qidx() && a.Didx() == b.Didx() &&
+    a.NthSnippet() == b.NthSnippet();
+}
 
 class SnippetProfileList {/*{{{*/
   public:
@@ -189,11 +199,49 @@ class SnippetProfileList {/*{{{*/
     void Sort() {
       sort(profiles.begin(), profiles.end(), CompareSnippetScore);
     }
+    void Stat(float* p_mean, float* p_std,
+              int begin = 0, int end = -1);
+
+    /* Normalize snippets[begin - end] with zero mean and unit std */
+    void Normalize(int begin = 0, int end = -1);
+
+    /* Normalize snippets[begin - end] assuming mean and std given */
+    void Normalize(float mean, float std,
+                   int begin = 0, int end = -1);
+    /* Add */
+    void Add(float weight, const SnippetProfileList& list,
+             int begin = 0, int end = -1);
+
+
+    /* Align with ref according to qidx, didx and sidx */
+    void Align(const SnippetProfileList& ref);
+
+
+    float MinScore() const {
+      float m = float_inf;
+      for (unsigned s = 0; s < profiles.size(); ++s) {
+        float score = profiles[s].Score();
+        if (score != -float_inf && score < m) m = score;
+      }
+      return m;
+    }
+
+    float MaxScore() const {
+      float M = -float_inf;
+      for (unsigned s = 0; s < profiles.size(); ++s) {
+        float score = profiles[s].Score();
+        if (score != -float_inf && score > M) M = score;
+      }
+      return M;
+    }
+
   private:
     vector<SnippetProfile> profiles;
 };/*}}}*/
 
 ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list);
+
+
 
 class AnswerList {/*{{{*/
   public:
@@ -220,6 +268,7 @@ class AnswerList {/*{{{*/
 };/*}}}*/
 
 ostream& operator<<(ostream& os, const AnswerList& ans_list);
+
 
 
 void ParseList(const char *filename,

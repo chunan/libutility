@@ -20,6 +20,7 @@ using std::deque;
 using std::vector;
 using std::string;
 using std::ostream;
+using std::setw;
 
 char *Strcpy(char *&dest, const char src[]);
 
@@ -140,15 +141,39 @@ class TwoDimVector {/*{{{*/
       if (!array.empty()) return array[0].size();
       else return 0u;
     }
+
+    typename vector<vector<_Tp> >::const_iterator begin() const {
+      return array.begin();
+    }
+    typename vector<vector<_Tp> >::iterator begin() {
+      return array.begin();
+    }
+    typename vector<vector<_Tp> >::const_iterator end() const {
+      return array.end();
+    }
+    typename vector<vector<_Tp> >::iterator end() {
+      return array.end();
+    }
   private:
     vector<vector<_Tp> > array;
 };/*}}}*/
 
 template<class _Tp>
+ostream& operator<<(ostream& os, const vector<_Tp>& op) {
+  os << "{";
+  for (unsigned i = 0; i < op.size(); ++i) {
+    os << ' ' << op[i];
+  }
+  os << "}";
+  return os;
+}
+
+template<class _Tp>
 ostream& operator<<(ostream& os, const TwoDimVector<_Tp>& op) {
   for (unsigned r = 0; r < op.nrow(); ++r) {
+    os << setw(3) << r << ":";
     for (unsigned c = 0; c < op.ncol(); ++c) {
-      os << "\t" << op(r, c);
+      os /*<< " "*/ << op[r][c];
     }
     os << "\n";
   }
@@ -253,14 +278,15 @@ class TwoDimArray {/*{{{*/
 };/*}}}*/
 
 template<class _Tp>
-ostream& operator<<(ostream& fs, const TwoDimArray<_Tp>& tda) {/*{{{*/
+ostream& operator<<(ostream& os, const TwoDimArray<_Tp>& tda) {/*{{{*/
   for (int r = 0; r < tda.R(); ++r) {
+    os << setw(3) << r << ":";
     for (int c = 0; c < tda.C(); ++c) {
-      fs << " " << tda.Entry(r, c);
+      os << " " << tda.Entry(r, c);
     }
-    fs << endl;
+    os << endl;
   }
-  return fs;
+  return os;
 }/*}}}*/
 
 void CalCpuTime(clock_t real, struct tms *tms_start, struct tms * tms_end,
