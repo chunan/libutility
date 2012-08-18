@@ -25,27 +25,6 @@ using std::setw;
 char *Strcpy(char *&dest, const char src[]);
 
 template <class _Tp>
-inline _Tp Min(const _Tp a, const _Tp b)/*{{{*/
-{
-	if(a <= b) return a;
-	else return b;
-}
-/*}}}*/
-
-template <typename _Tp>
-typename deque<_Tp>::iterator Max(deque<_Tp> &q, int size) {/*{{{*/
-	typename deque<_Tp>::iterator maxItr = q.begin();
-	for(typename deque<_Tp>::iterator it = q.begin()+1; it != q.end(); it++){
-		size--;
-		if(size == 0) break;
-		if(*it > *maxItr){
-			maxItr = it;
-		}
-	}
-	return maxItr;
-}/*}}}*/
-
-template <class _Tp>
 class mem_op {/*{{{*/
 	public:
 		static _Tp ** new_2d_array(int s_m, int s_n) {

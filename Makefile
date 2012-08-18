@@ -5,10 +5,10 @@ CXXFLAGS=-Iinclude
 
 MACHINE=$(shell uname -m)
 
-SRC = ugoc_utility.cpp thread_util.cpp std_common.cpp
+SRC = utility.cpp thread_util.cpp std_common.cpp
 OBJ = $(addprefix obj/$(MACHINE)/,$(SRC:.cpp=.o))
 
-TARGET = lib/$(MACHINE)/libugoc_utility.a
+TARGET = lib/$(MACHINE)/libutility.a
 
 vpath %.cpp src
 vpath %.o obj/$(MACHINE)
@@ -27,8 +27,8 @@ debug: $(TARGET)
 %.d: %.cpp
 	$(CC) -M $(CXXFLAGS) $< > $@
 
-lib/$(MACHINE)/libugoc_utility.a: \
-	obj/$(MACHINE)/ugoc_utility.o \
+lib/$(MACHINE)/libutility.a: \
+	obj/$(MACHINE)/utility.o \
 	obj/$(MACHINE)/thread_util.o \
 	obj/$(MACHINE)/std_common.o
 	$(AR) rucs $@ $^

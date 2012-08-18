@@ -4,7 +4,7 @@
 #include <string.h>
 #include <iostream>
 
-#include "ugoc_utility.h"
+#include "utility.h"
 
 using std::cout;
 using std::cerr;

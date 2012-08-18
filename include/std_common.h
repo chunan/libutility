@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <limits>
 #include "thread_util.h"
-#include "ugoc_utility.h"
+#include "utility.h"
 
 using std::vector;
 using std::string;
@@ -22,6 +22,14 @@ namespace StdCommonUtil {
 
 typedef std::pair<unsigned, unsigned> UPair;
 typedef std::pair<int, int> IPair;
+
+struct FileDirExt {
+  string dir;
+  string ext;
+  bool operator==(const FileDirExt& ref) {
+    return (dir.compare(ref.dir) == 0) && (ext.compare(ref.ext) == 0);
+  }
+};
 
 
 #define float_inf std::numeric_limits<float>::infinity()
@@ -239,8 +247,9 @@ class SnippetProfileList {/*{{{*/
     vector<SnippetProfile> profiles;
 };/*}}}*/
 
-ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list);
+ostream& operator<<(ostream& os, const SnippetProfile& snippet);
 
+ostream& operator<<(ostream& os, const SnippetProfileList& snippet_list);
 
 
 class AnswerList {/*{{{*/
@@ -272,7 +281,6 @@ ostream& operator<<(ostream& os, const AnswerList& ans_list);
 
 
 void ParseList(const char *filename,
-               string directory,
                vector<string> *list,
                QueryProfileList *profile_list = NULL);
 
@@ -292,6 +300,7 @@ void DumpResult(const char* fname,
                 QDArray<vector<float> >& snippet_dist,
                 const vector<string>& doc_list);
 
+/* Dump list of qid */
 void DumpResult(FILE* fp,
                 int qid,
                 const SnippetProfileList& snippet_list,
@@ -300,24 +309,26 @@ void DumpResult(FILE* fp,
                 vector<bool>& exist_doc,
                 float bias = 0.0f);
 
+/* Dump list of multiple qid's (per doc basis) */
 void DumpResult(string filename,
                 const QueryProfileList& profile_list,
                 const vector<SnippetProfileList>& snippet_lists,
                 const vector<string>& doc_list,
                 const AnswerList* ans_list);
 
-void DumpResult(string filename,
-                const QueryProfileList& profile_list,
-                const vector<SnippetProfileList>& snippet_lists,
-                const vector<SnippetProfileList>& backup_lists,
-                const vector<string>& doc_list,
-                const AnswerList* ans_list);
-
+/* Dump list of multiple qid's (per doc basis), with backoff (in v_snp_lists) */
 void DumpResult(string filename,
                 const QueryProfileList& profile_list,
                 const vector<const vector<SnippetProfileList>* >& v_snp_lists,
                 const vector<string>& doc_list,
                 const AnswerList* ans_list);
+
+/* Dump list of multiple qid's (per snippet basis) */
+void DumpSnippet(string filename,
+                 const QueryProfileList& profile_list,
+                 const vector<SnippetProfileList>& snippet_list,
+                 const vector<string>& doc_list,
+                 const AnswerList* ans_list);
 
 } //namespace StdCommonUtil
 #endif
