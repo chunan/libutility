@@ -231,6 +231,7 @@ class SnippetProfileList {/*{{{*/
         float score = profiles[s].Score();
         if (score != -float_inf && score < m) m = score;
       }
+      if (m == float_inf) m = 0.0;
       return m;
     }
 
@@ -240,6 +241,7 @@ class SnippetProfileList {/*{{{*/
         float score = profiles[s].Score();
         if (score != -float_inf && score > M) M = score;
       }
+      if (M == -float_inf) M = 0.0;
       return M;
     }
 

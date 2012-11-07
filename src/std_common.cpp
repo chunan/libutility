@@ -232,8 +232,8 @@ void AnswerList::Init(const string& filename,/*{{{*/
     int qid = atoi(tok);
     int qidx = profile_list.Find(qid);
     if (qidx == -1) { // Unknown qid
-      fprintf(stderr, "Warning %s::%s: Query id %d unknown, ignore.\n",
-              typeid(*this).name(), __FUNCTION__, qid);
+      fprintf(stderr, "%s:%d: Query id %d unknown, ignore.\n",
+              __FILE__, __LINE__, qid);
       continue;
     }
     /* 2nd field, not used */
@@ -242,8 +242,8 @@ void AnswerList::Init(const string& filename,/*{{{*/
     string name = strtok(NULL," \t\n");
     int didx = GetDidx(doc_list, name);
     if (didx == -1) {// Unknown didx
-      fprintf(stderr, "Warning %s::%s: Doc %s not found, ignore.\n",
-              typeid(*this).name(), __FUNCTION__, name.c_str());
+      fprintf(stderr, "%s:%d: Doc %s not found, ignore.\n",
+              __FILE__, __LINE__, name.c_str());
       continue;
     }
     is_answer[qidx][didx] = true;

@@ -35,10 +35,13 @@ class Dispatcher {/*{{{*/
         ctr++;
       }
 
-      if (objptr == NULL || (verbose && (ctr % verbose_interval == 0))){
+      do {
+        if (objects.empty()) break;
+        if (!verbose) break;
+        if (objptr != NULL && ctr % verbose_interval != 0) break;
         cout << "\r" << 100 * ctr / objects.size() << "%  ";
         cout.flush();
-      }
+      } while (false);
 
       if (lock)
         pthread_mutex_unlock(&f_mutex);
