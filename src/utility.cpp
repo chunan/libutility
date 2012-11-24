@@ -1,8 +1,8 @@
 #include <unistd.h>
 #include <cstdarg>
 #include <cstdlib>
-#include <string.h>
 #include <iostream>
+#include <string.h>
 
 #include "utility.h"
 
@@ -170,3 +170,24 @@ string GetExtension(const string& input) {
   }
   return ext;
 }
+
+vector<string> split(string str, string delim) {
+  vector<string> tokens;
+  size_t head = 0, pos = str.find_first_of(delim, head);
+  while (pos != string::npos) {
+    tokens.push_back(str.substr(head, pos - head));
+    head = pos + 1;
+    pos = str.find_first_of(delim, head);
+  }
+  if (head < str.length())
+    tokens.push_back(str.substr(head, str.length() - head));
+  return tokens;
+}
+
+istream& Getline(istream& is, string& str) {
+  while (getline(is, str)) {
+    if (!str.empty()) break;
+  }
+  return is;
+}
+

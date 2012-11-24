@@ -1,26 +1,19 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
-#include <fstream>
 #include <sys/times.h>
 #include <cassert>
-#include <cstdio>
-#include <deque>
 #include <vector>
-#include <string>
 #include <iomanip>
-#include <iostream>
-#include <stdio.h>
-#include <string.h>
+#include <fstream>
+#include <string>
 
-using std::cout;
 using std::endl;
-using std::setw;
-using std::deque;
 using std::vector;
 using std::string;
 using std::ostream;
 using std::setw;
+using std::istream;
 
 char *Strcpy(char *&dest, const char src[]);
 
@@ -210,8 +203,6 @@ class TwoDimArray {/*{{{*/
     }
     inline _Tp& operator()(const int r, const int c) {
       assert(data_ != NULL);
-      //if (r < 0 || r >= nr_) cout << *this;
-      //if (c < 0 || c >= nc_) cout << *this;
       assert(r >= 0 && r < nr_);
       assert(c >= 0 && c < nc_);
       return data_[r][c];
@@ -319,5 +310,8 @@ struct ReplaceExt {
   string ext;
 };
 
+vector<string> split(string str, string delim = " \t\n");
+
+istream& Getline(istream& is, string& str);
 
 #endif
