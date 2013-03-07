@@ -217,8 +217,8 @@ class SnippetProfileList {/*{{{*/
     void Normalize(float mean, float std,
                    int begin = 0, int end = -1);
     /* Add */
-    void Add(float weight, const SnippetProfileList& list,
-             int begin = 0, int end = -1);
+    void Add(float self_weight, float ref_weight,
+             const SnippetProfileList& list, int begin = 0, int end = -1);
 
 
     /* Align with ref according to qidx, didx and sidx */

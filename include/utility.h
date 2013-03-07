@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include <cstring>
 
 using std::endl;
 using std::vector;

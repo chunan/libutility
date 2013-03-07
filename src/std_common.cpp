@@ -150,9 +150,9 @@ void SnippetProfileList::Normalize(float mean, float std,/*{{{*/
 }/*}}}*/
 
 
-void SnippetProfileList::Add(float weight, const SnippetProfileList& list,/*{{{*/
+void SnippetProfileList::Add(float self_weight, float ref_weight,
+                             const SnippetProfileList& list,
                              int begin, int end) {
-  if (weight == 0.0) return;
 
   if (end < 0 || end > static_cast<int>(size())) end = size();
   if (begin < 0 || begin >= static_cast<int>(size())) begin = 0;
@@ -175,7 +175,7 @@ void SnippetProfileList::Add(float weight, const SnippetProfileList& list,/*{{{*
       cerr << "SnippetProfileList::Add(): error: profile[" << s
            << "].NthSnippet() not matched\n";
     } else {
-      host.ScoreRef() += weight * guest.Score();
+      host.ScoreRef() = self_weight * host.Score() + ref_weight * guest.Score();
     }
   }
 
@@ -326,6 +326,7 @@ void _DumpDist(FILE* fp,/*{{{*/
   }
 }/*}}}*/
 
+#if 0
 void DumpResult(const char* fname,/*{{{*/
                 const QueryProfileList& profile_list,
                 QDArray<vector<float> >& snippet_dist,
@@ -346,6 +347,7 @@ void DumpResult(const char* fname,/*{{{*/
   }
   fclose(fp);
 }/*}}}*/
+#endif
 
 /* If exist_doc.empty(): print every snippet
  * Else: print one document once (score = first appearance)
@@ -378,6 +380,7 @@ void DumpResult(FILE* fp,/*{{{*/
   }
 }/*}}}*/
 
+#if 0
 void DumpResult(string filename,/*{{{*/
                 const QueryProfileList& profile_list,
                 const vector<SnippetProfileList>& snippet_lists,
@@ -393,6 +396,7 @@ void DumpResult(string filename,/*{{{*/
   }
   fclose(fp);
 }/*}}}*/
+#endif
 
 void DumpResult(string filename,/*{{{*/
                 const QueryProfileList& profile_list,
@@ -409,15 +413,15 @@ void DumpResult(string filename,/*{{{*/
       const QueryProfile& query = profile_list.QP(qidx);
       exist_doc.assign(exist_doc.size(), false);
 
+      float bias = 0.0f;
       for (int i = v_snp_lists.size() - 1; i >= 0; --i) {
 
         const SnippetProfileList& snippet_list = (*v_snp_lists[i])[qidx];
-        float bias = 0.0f;
 
         /* Not the last list, need bias */
         if (i < static_cast<int>(v_snp_lists.size() - 1)) {
           const SnippetProfileList& higher_list = (*v_snp_lists[i + 1])[qidx];
-          bias = higher_list.MinScore() - snippet_list.MaxScore();
+          bias += higher_list.MinScore() - snippet_list.MaxScore();
         }
 
         DumpResult(fp, query.qid, snippet_list, doc_list, ans_list, exist_doc,
