@@ -8,11 +8,12 @@
 ## thread_util.h functions
 
 Flow & structure at a glance
-![alt text](https://github.com/chunan/libutility/img/thread_util.jpg "Flow & structure at a glance")
+![Flow & structure at a glance](img/thread_util.jpg "Flow & structure at a glance")
 
 
-``void* ThreadEntry(void* arg)`` is the entry point for each thread when calling ``pthread_create(thread, NULL, ThreadEntry, arg)``.
-It assume `arg` is a ThreadRunner (see below) type and call `.Run()`.
+``void* ThreadEntry(void* arg)`` is the entry point for each thread when calling  
+``pthread_create(thread, NULL, ThreadEntry, arg)``. It assume `arg` is a
+``ThreadRunner`` (see below) type and call `.Run()`.
 ```cpp
 void* ThreadEntry(void* arg) {                                                              
   ThreadRunner *objptr = static_cast<ThreadRunner *>(arg);                                  
@@ -98,4 +99,11 @@ class StdRunner : public ThreadRunner {
     }
   }
 };
+```
+Then we launch these jobs with ``CastThreads()``.
+```cpp
+StdRunner template_runner(&disp, ... /* some global config */);
+vector<StdRunner> runners(template_runner);
+CastThreads(runners);  // This function block by pthread_join.
+
 ```
